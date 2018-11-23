@@ -28,7 +28,7 @@ import smtplib
     """
 def send_email(pair_list):
     for row in pair_list:
-        from_addr = 'Secret Santa <johnsmith@hotmail.com>'
+        from_addr = 'Secret Santa <jeanrobin.foehn@gmail.com>'
         to_addr  = row[2]
         msg = "\r\n".join([
             "From: " + from_addr,
@@ -57,7 +57,7 @@ def send_email(pair_list):
         server.login(username,password)
         server.sendmail(from_addr, to_addr, msg)
         server.quit()
-        print "Email sent to", row[0][1:], ": ", to_addr # Debug: show confirmation in Terminal
+        print("Email sent to", row[0][1:], ": ", to_addr) # Debug: show confirmation in Terminal
 
 """ Define a main() function that calls the necessary functions.
     """
@@ -66,7 +66,9 @@ def main():
     csvfile = open('pairs.csv')
     reader = csv.reader(csvfile, delimiter=',', quotechar='|')
     pair_list = list(reader)  # convert csv reader to list
-    send_email(pair_list)     # Email receiver to each giver
+    # send_email(pair_list)     # Email receiver to each giver
+    for row in pair_list:
+        print(row[0], "/",row[1], "/",row[2], "/",row[3])
 
 """ This is the standard boilerplate that calls the main() function.
     """

@@ -1,76 +1,81 @@
-#!/usr/bin/python -tt
+import boto3
+from botocore.exceptions import ClientError
 
-# This file is part of secretsanta.
-#    secretsanta is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    secretsanta is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with secretsanta.  If not, see <http://www.gnu.org/licenses/>.
+# Replace sender@example.com with your "From" address.
+# This address must be verified with Amazon SES.
+SENDER = "Secret Santa <serverless.secretsanta@gmail.com>"
 
-"""A 'Secret Santa' emailing application. It reads a csv file containing 
-    names, room numbers and email addresses from both 'givers' and 'receivers', 
-    as paired by the pairing.py script.
-    Remember to remove your email password before sharing!
-    """
 
-import sys
-import csv
-import smtplib
+# Specify a configuration set. If you do not want to use a configuration
+# set, comment the following variable, and the 
+# ConfigurationSetName=CONFIGURATION_SET argument below.
+# CONFIGURATION_SET = "ConfigSet"
 
-""" Send email to gift buyers with info on their secret gift receiver
-    """
-def send_email(pair_list):
-    for row in pair_list:
-        from_addr = 'Secret Santa <jeanrobin.foehn@gmail.com>'
-        to_addr  = row[2]
-        msg = "\r\n".join([
-            "From: " + from_addr,
-            "To: " + to_addr,
-            "Subject: Secret Santa",
-            "",
-            "Dear " + row[0][1:] + " (room " + row[1] + ")",
-            "",
-            "Thanks for participating in the Secret Santa!",
-            "",
-            "Please find a present for " + row[3] + " (room " + row[4] + ").",
-            "",
-            "Please reply to this email if you have any questions or issues.",
-            "",
-            "See you then!",
-            "",
-            "Santa"
-            ])
-        username = 'johnsmith@hotmail.com'
-        password = 'xxxxxxxx'
-        server = smtplib.SMTP('smtp-mail.outlook.com',587) # if Hotmail/Microsoft Outlook
-        #server = smtplib.SMTP('smtp.gmail.com:587') # if gmail
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(username,password)
-        server.sendmail(from_addr, to_addr, msg)
-        server.quit()
-        print("Email sent to", row[0][1:], ": ", to_addr) # Debug: show confirmation in Terminal
+# If necessary, replace us-west-2 with the AWS Region you're using for Amazon SES.
+AWS_REGION = "eu-west-1"
 
-""" Define a main() function that calls the necessary functions.
-    """
-def main():
-    # Import list of givers and receivers
-    csvfile = open('pairs.csv')
-    reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-    pair_list = list(reader)  # convert csv reader to list
-    # send_email(pair_list)     # Email receiver to each giver
-    for row in pair_list:
-        print(row[0], "/",row[1], "/",row[2], "/",row[3])
+# The subject line for the email.
+SUBJECT = "Amazon SES Test (SDK for Python)"
 
-""" This is the standard boilerplate that calls the main() function.
-    """
-if __name__ == '__main__':
-    main()
+# The email body for recipients with non-HTML email clients.
+BODY_TEXT = ("Amazon SES Test (Python)\r\n"
+             "This email was sent with Amazon SES using the "
+             "AWS SDK for Python (Boto)."
+            )
+            
+# The HTML body of the email.
+BODY_HTML = """<html>
+<head></head>
+<body>
+  <h1>Amazon SES Test (SDK for Python)</h1>
+  <p>This email was sent with
+    <a href='https://aws.amazon.com/ses/'>Amazon SES</a> using the
+    <a href='https://aws.amazon.com/sdk-for-python/'>
+      AWS SDK for Python (Boto)</a>.</p>
+</body>
+</html>
+            """            
+
+# The character encoding for the email.
+CHARSET = "UTF-8"
+
+main(recipient):
+    # Create a new SES resource and specify a region.
+    client = boto3.client('ses',region_name=AWS_REGION)
+
+    # Try to send the email.
+    try:
+        #Provide the contents of the email.
+        response = client.send_email(
+            Destination={
+                'ToAddresses': [
+                    recipient,
+                ],
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': CHARSET,
+                        'Data': BODY_HTML,
+                    },
+                    'Text': {
+                        'Charset': CHARSET,
+                        'Data': BODY_TEXT,
+                    },
+                },
+                'Subject': {
+                    'Charset': CHARSET,
+                    'Data': SUBJECT,
+                },
+            },
+            Source=SENDER,
+            # If you are not using a configuration set, comment or delete the
+            # following line
+            ConfigurationSetName=CONFIGURATION_SET,
+        )
+    # Display an error if something goes wrong.	
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+    else:
+        print("Email sent! Message ID:"),
+        print(response['MessageId'])
